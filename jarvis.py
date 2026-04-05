@@ -15,7 +15,7 @@ def speak(text):
     speech_file_path = "jarvis.mp3"
 
     with client.audio.speech.with_streaming_response.create(
-        model="gpt-4o-mini-tts",
+        model="tts-1",
         voice="alloy",
         input=text
     ) as response:
@@ -28,13 +28,20 @@ def listen():
 
     with sr.Microphone() as source:
         print("Listening...")
-        audio = r.listen(source)
-
+        try:
+            audio = r.listen(source, timeout=5)
+        except sr.RequestError:
+            return ""
+    
     try:
         command = r.recognize_google(audio)
         print("You:", command)
         return command.lower()
-    except:
+    except sr.UnknownValueError:
+        print("Could not understand audio")
+        return ""
+    except sr.RequestError:
+        print("Could not request results from Google Speech Recognition")
         return ""
 
 speak("Jarvis online. Hello Lucas, how can I help you?")
@@ -42,7 +49,10 @@ speak("Jarvis online. Hello Lucas, how can I help you?")
 while True:
     command = listen()
 
-    if "hello" in command:
+    if command == "":
+        continue
+
+    elif "hello" in command:
         speak("Hello Lucas. I am ready.")
 
     elif "time" in command:
@@ -55,3 +65,15 @@ while True:
     elif "stop" in command or "shutdown" in command:
         speak("Goodbye Lucas.")
         break
+
+    else:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are Jarvis, a helpful AI assistant that speaks like Iron Man's assistant."},
+                {"role": "user", "content": command}
+            ]
+        )
+
+        reply = response.choices[0].message.content
+        speak(reply)

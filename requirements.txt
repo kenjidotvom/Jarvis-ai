@@ -1,5 +1,6 @@
 openai
 speechrecognition
+pyttsx3
 pyaudio
 python-dotenv
 playsound
